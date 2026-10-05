@@ -1,0 +1,12 @@
+# Terraform's downloaded providers (large, can be re-downloaded with init)
+.terraform/
+
+# State files: can contain secrets, will live in S3 instead
+*.tfstate
+*.tfstate.*
+
+# Saved plan files: can contain secrets
+tfplan
+
+# Crash logs
+crash.log
