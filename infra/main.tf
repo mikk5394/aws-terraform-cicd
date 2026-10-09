@@ -1,4 +1,5 @@
 resource "aws_vpc" "main" {
+  #checkov:skip=CKV2_AWS_11:Flow logs need a log destination and extra permissions, would be enabled centrally in production
   cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
 
@@ -7,8 +8,14 @@ resource "aws_vpc" "main" {
   }
 }
 
+#Take over the default security group AWS creates with every VPC and strip all its rules
+resource "aws_default_security_group" "default" {
+  vpc_id = aws_vpc.main.id
+}
+
 #The one public subnet the case asks for
 resource "aws_subnet" "public" {
+  #checkov:skip=CKV_AWS_130:The case asks for a public subnet so the web server is reachable
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "10.0.1.0/24"
   availability_zone       = "eu-north-1a"
@@ -59,10 +66,11 @@ data "aws_ami" "al2023" {
   }
 }
 
-#Firewall for the web server, HTTP in and anything out
+#Firewall for the web server, HTTP in and HTTPS out
 resource "aws_security_group" "web" {
+  #checkov:skip=CKV_AWS_260:Public web server by design, would sit behind a load balancer with HTTPS in production
   name        = "case-web-sg"
-  description = "Allow HTTP in and all traffic out"
+  description = "Allow HTTP in and HTTPS out"
   vpc_id      = aws_vpc.main.id
 
   ingress {
@@ -74,10 +82,10 @@ resource "aws_security_group" "web" {
   }
 
   egress {
-    description = "All outbound, e.g. for installing packages"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    description = "HTTPS out for installing packages"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -88,10 +96,13 @@ resource "aws_security_group" "web" {
 
 #The EC2 instance the case asks for
 resource "aws_instance" "web" {
+  #checkov:skip=CKV_AWS_126:Detailed monitoring costs extra, basic monitoring is enough for a demo
+  #checkov:skip=CKV2_AWS_41:No IAM in infra on purpose, so the apply role can never grant itself permissions
   ami                    = data.aws_ami.al2023.id
   instance_type          = "t3.micro"
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.web.id]
+  ebs_optimized          = true
 
   #Require IMDSv2, which protects the instance's credentials
   metadata_options {
