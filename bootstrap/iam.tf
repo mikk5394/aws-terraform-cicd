@@ -1,5 +1,5 @@
 locals {
-  github_repo = "mikk5394/aws-terraform-cicd"
+  github_repo = "mikk5394@31307509/aws-terraform-cicd@1408606083"
 }
 
 #Read-only role for the pipeline, used for plan on PRs and main
