@@ -5,8 +5,8 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "infra/**"
-      - ".github/workflows/terraform-pr.yml"
+        - "infra/**"
+        - ".github/workflows/**"
 
 #Least privilege by default, jobs ask for more only if they need it
 permissions:
